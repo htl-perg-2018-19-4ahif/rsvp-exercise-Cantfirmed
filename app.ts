@@ -17,7 +17,7 @@ interface IParty{
   guests: IGuest[];
 }
 
-let db = new loki('loki.json');
+let db = new loki(__dirname + '/data.dat', {autosave: true, autoload: true});
 
 //const auth = basicAuth({ users: { admin: 'P@ssw0rd!' } });
 
@@ -56,13 +56,14 @@ server.post('/register/:id', (request, response) => {
 });
 
 server.get('/guests/:id', (request, response) => {
-  //server.use(basicAuth({
-  //  users: { 'admin': 'supersecret' }
-  //}));
+//  server.use(basicAuth(null), (req: basicAuth.IBasicAuthedRequest, res, next) => {
+//    res.end(`Welcome ${req.auth.user} (your password is ${req.auth.password})`)
+//    next()
+//})
   let mess: string = "";
   for(let i=0;i<partys.get(request.params.id).guests.length;i++){
     mess += partys.get(request.params.id).guests[i].firstName + " " +  partys.get(request.params.id).guests[i].lastName + "\n";
-  }
+  } 
   response.send(mess);
 });
 
