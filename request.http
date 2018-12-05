@@ -1,11 +1,11 @@
-POST http://localhost:8080/register HTTP/1.1
+POST http://localhost:8080/register/1 HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
 { "firstName": "Foo", "lastName": "Bar" }
 
 ###
-GET http://localhost:8080/guests HTTP/1.1
+GET http://localhost:8080/guests/1 HTTP/1.1
 Accept: application/json
 
 ###

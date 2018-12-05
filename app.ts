@@ -1,43 +1,72 @@
 import {CREATED, BAD_REQUEST, UNAUTHORIZED} from 'http-status-codes';
-import * as loki from 'lokijs';
 import * as express from 'express';
-import * as basic from 'express-basic-auth';
+import * as loki from 'lokijs';
+import * as basicAuth from 'express-basic-auth';
 
-var app = express();
-app.use(express.json());
 
-const adminFilter = basic({ users: { admin: 'P@ssw0rd!' }});
 
-const db = new loki(__dirname + '/db.dat', {autosave: true, autoload: true});
-let guests = db.getCollection('guests');
-if (!guests) {
-  guests = db.addCollection('guests');
+interface IGuest{
+  firstName: string;
+  lastName: string;
 }
 
-app.get('/guests', adminFilter, (req, res) => {
-  res.send(guests.find());
+interface IParty{
+  title: string;
+  loc: string;
+  date: Date;
+  guests: IGuest[];
+}
+
+let db = new loki('loki.json');
+
+//const auth = basicAuth({ users: { admin: 'P@ssw0rd!' } });
+
+let partys:Collection<IParty> = db.addCollection('partys');
+partys.insert({ title: 'Christmas Party', loc: 'My Place', date: new Date('24.12.2018'), guests: []});
+
+
+let server = express();
+server.use(express.json());
+
+
+
+server.get('/party', (request, response) => {
+  response.send({ 'Party Info': partys.get(1).title + ", " + partys.get(1).loc + ", " + partys.get(1).date });
 });
 
-app.get('/party', (req, res, next) => {
-  res.send({
-    title: 'Happy new year!',
-    location: 'At my home',
-    date: new Date(2017, 0, 1)
-  });
-});
-
-app.post('/register', (req, res, next) => {
-  if (!req.body.firstName || !req.body.lastName) {
-    res.status(BAD_REQUEST).send('Missing mandatory member(s)');
-  } else {
-    const count = guests.count();
-    if (count < 10) {
-      const newDoc = guests.insert({firstName: req.body.firstName, lastName: req.body.lastName});
-      res.status(CREATED).send(newDoc);
-    } else {
-      res.status(UNAUTHORIZED).send('Sorry, max. number of guests already reached');
+server.post('/register/:id', (request, response) => {
+  //response.send({'Party Info': partys.get(1).title + ", " + partys.get(1).loc + ", " + partys.get(1).date});
+  if(!request.body.firstName || !request.body.lastName){
+    response.status(BAD_REQUEST).send('Missing mandatory member(s)');
+  }else{ 
+    if(partys.get(request.params.id)){
+      var cguest: IGuest = {firstName: request.body.firstName, lastName: request.body.lastName};
+      
+      
+      if(partys.get(request.params.id).guests.length<10){
+        const party = partys.get(request.params.id);
+        party.guests.push(cguest);
+        partys.update(party);
+        response.send("saved");
+      }else{
+        response.status(UNAUTHORIZED).send('Too many members');
+      }
     }
   }
 });
 
-app.listen(8080, () => console.log('API is listening'));
+server.get('/guests/:id', (request, response) => {
+  //server.use(basicAuth({
+  //  users: { 'admin': 'supersecret' }
+  //}));
+  let mess: string = "";
+  for(let i=0;i<partys.get(request.params.id).guests.length;i++){
+    mess += partys.get(request.params.id).guests[i].firstName + " " +  partys.get(request.params.id).guests[i].lastName + "\n";
+  }
+  response.send(mess);
+});
+
+const port = 8080;
+server.listen(port, function () {
+  console.log(`API is listening on port ${port}`);
+});
